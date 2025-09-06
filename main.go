@@ -7,23 +7,50 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/cheggaaa/pb/v3"
 )
 
+const (
+	version   = "1.0.0"
+	developer = "Olivier M.K"
+	github    = "https://github.com/oliviermugishak"
+	banner    = `
+   ____                 _ _ _   
+  / ___| ___   __ _  __| (_) |_ 
+ | |  _ / _ \ / _` + "`" + ` |/ _` + "`" + ` | | __|
+ | |_| | (_) | (_| | (_| | | |_ 
+  \____|\___/ \__,_|\__,_|_|\__|
+                                
+   Grabit - Your All-in-One YouTube Downloader`
+)
+
 func main() {
+	// CLI flags
 	urlList := flag.String("urls", "", "Comma-separated YouTube URLs or playlist URLs")
 	audioOnly := flag.Bool("audio", false, "Download audio only")
 	outputDir := flag.String("out", "downloads", "Output directory")
 	quality := flag.String("quality", "best", "Quality: best, worst, 720p, 1080p, etc.")
+	showVersion := flag.Bool("version", false, "Show Grabit version")
 	flag.Parse()
 
-	if *urlList == "" {
-		log.Fatal("❌ Please provide at least one YouTube URL using -urls")
+	// Banner
+	fmt.Println(banner)
+
+	if *showVersion {
+		fmt.Printf("Version: %s\nDeveloper: %s\nGitHub: %s\n", version, developer, github)
+		return
 	}
 
+	if *urlList == "" {
+		showHelp()
+		return
+	}
+
+	// Ensure output directory exists
 	if err := os.MkdirAll(*outputDir, os.ModePerm); err != nil {
 		log.Fatalf("❌ Failed to create output directory: %v", err)
 	}
@@ -67,9 +94,10 @@ func main() {
 
 		for scanner.Scan() {
 			line := scanner.Text()
-			fmt.Println(line) // print full yt-dlp output as well
+			line = sanitizeOutputLine(line)
+			fmt.Println(line) // sanitized output
 
-			// Progress lines start with [download]
+			// Progress bar logic
 			if strings.HasPrefix(line, "[download]") {
 				parts := strings.Fields(line)
 				if len(parts) < 2 {
@@ -109,4 +137,28 @@ func main() {
 
 		fmt.Printf("✅ Finished downloading: %s\n\n", url)
 	}
+}
+
+// sanitizeOutputLine replaces illegal filename characters
+func sanitizeOutputLine(line string) string {
+	illegal := regexp.MustCompile(`[<>:"/\\|?*]`)
+	return illegal.ReplaceAllString(line, "_")
+}
+
+// showHelp prints a stylish help message
+func showHelp() {
+	fmt.Println(`
+Usage: grabit [options]
+
+Options:
+  -urls     Comma-separated YouTube URLs or playlist URLs (required)
+  -audio    Download audio only (m4a)
+  -quality  Video quality: best, worst, 720p, 1080p, etc. (default: best)
+  -out      Output directory (default: downloads)
+  -version  Show Grabit version and developer info
+
+Examples:
+  grabit -urls="https://www.youtube.com/watch?v=ID"
+  grabit -urls="https://www.youtube.com/playlist?list=PLAYLIST_ID" -audio
+  grabit -urls="https://youtu.be/ID1,https://youtu.be/ID2" -quality="720p"`)
 }
