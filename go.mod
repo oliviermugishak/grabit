@@ -1,4 +1,4 @@
-module grabit-downloader
+module grabit
 
 go 1.25.0
 

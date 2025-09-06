@@ -1,10 +1,12 @@
 #!/bin/bash
 
 echo "🔧 Building Grabit..."
-go build -o grabit main.go
+
+# Build the whole module
+go build -o grabit ./...
 
 if [ $? -ne 0 ]; then
-    echo "❌ Build failed. Make sure Go is installed and main.go exists."
+    echo "❌ Build failed. Make sure Go is installed and your module is correct."
     exit 1
 fi
 
